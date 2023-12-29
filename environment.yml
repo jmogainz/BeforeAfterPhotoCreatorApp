@@ -1,8 +1,16 @@
-name: flask_env
+name: BAPhotoCreatorEnv
 channels:
   - anaconda
   - conda-forge
   - defaults
 dependencies:
   - python=3.10
-  - flask
+  - numpy
+  - pandas
+  - scikit-learn
+  - tensorflow
+  - pillow
+  - matplotlib
+  - pip
+  - pip:
+    - flask==3.0.0 

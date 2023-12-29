@@ -1,6 +1,9 @@
 $(document).ready(function() {
     $('#upload-form').on('submit', function(event) {
         event.preventDefault();
+        $('#results').html(''); // Clear previous results
+        $('#loader').show(); // Show the spinner
+
         var formData = new FormData(this);
         $.ajax({
             url: '/upload',  // Python Flask route
@@ -12,7 +15,10 @@ $(document).ready(function() {
                 $('#results').html('');
                 if (data.links) {
                     data.links.forEach(link => {
-                        $('#results').append(`<a href="${link}" download>Download Processed Image</a><br>`);
+                        $('#results').append(`<div class="image-container">
+                                                <img src="${link}" alt="Processed Image" style="width:100%;max-width:300px;">
+                                                <a href="${link}" download>Download</a>
+                                              </div>`);
                     });
                 } else {
                     $('#results').html('<p>No images processed.</p>');
@@ -20,6 +26,9 @@ $(document).ready(function() {
             },
             error: function() {
                 $('#results').html('<p>An error occurred.</p>');
+            },
+            complete: function() {
+                $('#loader').hide(); // Hide the spinner
             }
         });
     });

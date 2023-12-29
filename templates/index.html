@@ -5,6 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Image Merge App</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <style>
+        .image-container {
+            margin: 10px;
+            display: inline-block;
+            text-align: center;
+        }
+        .image-container img {
+            width: 100%;
+            max-width: 300px; /* Adjust this value based on your preference */
+            height: auto;
+            margin-bottom: 5px;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -16,6 +29,12 @@
             </div>
             <button type="submit" class="btn btn-primary">Upload</button>
         </form>
+        <!-- Add this inside the <body> tag, preferably after the <form> -->
+        <div id="loader" style="display: none;" class="text-center">
+            <div class="spinner-border text-primary" role="status">
+                <span class="sr-only">Loading...</span>
+            </div>
+        </div>
         <div id="results" class="mt-5"></div>
     </div>
     <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
