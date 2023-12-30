@@ -1,15 +1,12 @@
 import os
 import numpy as np
 from tensorflow import keras
-from sklearn.cluster import KMeans, AgglomerativeClustering
-from scipy.cluster.hierarchy import linkage, fcluster
-from sklearn.metrics.pairwise import pairwise_distances
 from collections import defaultdict
 
 # plotting
-import matplotlib.pyplot as plt
-from sklearn.decomposition import PCA
-from sklearn.manifold import TSNE
+# import matplotlib.pyplot as plt
+# from sklearn.decomposition import PCA
+# from sklearn.manifold import TSNE
 
 ResNet152 = keras.applications.ResNet152
 preprocess_input = keras.applications.resnet50.preprocess_input
