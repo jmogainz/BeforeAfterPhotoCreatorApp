@@ -1,0 +1,7 @@
+numpy
+pandas
+scikit-learn
+tensorflow
+pillow
+matplotlib
+flask==3.0.0
