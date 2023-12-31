@@ -73,167 +73,60 @@ def cluster_images(image_directory):
     # Load images
     images, filenames = load_images(image_directory)
     
-    # Extract features
     # Load the pre-trained model
     model = ResNet152(weights='imagenet', include_top=False, pooling='avg', input_shape=(512, 512, 3))
-    features = model.predict(images)
     
-    # reshape the features so that each image is represented by a single vector
-    features = features.reshape(features.shape[0], -1)
+    # Extract features
+    feature_vectors = model.predict(images)
+    
+    # plot the feature vectors
+    # plot_feature_vectors(feature_vectors, labels=filenames)
+    
+    # Reshape the features so that each image is represented by a single vector
+    feature_vectors = feature_vectors.reshape(feature_vectors.shape[0], -1)
 
-    num_clusters = len(filenames) // 2 + 1
-
-    # Perform clustering
-    kmeans = KMeans(n_clusters=num_clusters, random_state=22)
-    kmeans.fit(features)
-
-    # Initial clustering
-    clusters = defaultdict(list)
-    for i, label in enumerate(kmeans.labels_):
-        clusters[label].append((filenames[i], features[i]))
-
-    # Function to calculate distance between two features
     def calculate_distance(feature1, feature2):
         return np.linalg.norm(feature1 - feature2)
 
-    re_cluster_count = 0
-    new_cluster_count = 0
+    # Calculate distances between all feature vectors
+    distances = {}
+    for i, feature1 in enumerate(feature_vectors):
+        distances[i] = []
+        for j, feature2 in enumerate(feature_vectors):
+            if i != j:
+                dist = calculate_distance(feature1, feature2)
+                distances[i].append((dist, j))
+        # Sort distances for each feature vector
+        distances[i].sort(key=lambda x: x[0])
 
-    for cluster, features in list(clusters.items()):
-        if len(features) > 2:
-            num_clusters = len(features) // 2
-            if len(features) % 2 == 1:
-                num_clusters += 1
+    # calculate the average factor between the first and second closest matches
+    average_closest_to_2nd_closest_factor = 0
+    for i, dist_list in distances.items():
+        average_closest_to_2nd_closest_factor += dist_list[1][0] / dist_list[0][0]
+    average_closest_to_2nd_closest_factor /= len(distances)
 
-            cluster_features = [feature for _, feature in features]
-            kmeans = KMeans(n_clusters=num_clusters, random_state=22)
-            kmeans.fit(cluster_features)
+    # Perform custom clustering
+    clusters = []
 
-            temp_new_clusters = {}
-            for i, label in enumerate(kmeans.labels_):
-                new_cluster_key = f"re_cluster_{re_cluster_count}_{label}"
-                if new_cluster_key not in temp_new_clusters:
-                    temp_new_clusters[new_cluster_key] = []
-                temp_new_clusters[new_cluster_key].append(features[i])
+    # Form clusters
+    for i, dist_list in distances.items():
+        # Always cluster with the closest
+        closest = dist_list[0][1]
+        clusters.append((i, closest))
 
-            del clusters[cluster]
-            
-            for new_cluster_key, new_cluster_features in temp_new_clusters.items():
-                new_cluster_key_cluster_modified = False
-                if len(new_cluster_features) == 1:
-                    single_feature = new_cluster_features[0][1]
-                    closest_match = None
-                    closest_distance = float('inf')
+        if dist_list[1][0] / dist_list[0][0] <= .5 * (average_closest_to_2nd_closest_factor - 1) + 1:
+            clusters.append((i, dist_list[1][1]))
+        elif dist_list[1][0] / dist_list[0][0] <= average_closest_to_2nd_closest_factor:
+            for dist, j in dist_list[1:4]:
+                clusters.append((i, j))
 
-                    # Find closest match
-                    for other_cluster_key, other_cluster_features in temp_new_clusters.items():
-                        if other_cluster_key != new_cluster_key:
-                            for filename, feature in other_cluster_features:
-                                distance = calculate_distance(single_feature, feature)
-                                if distance < closest_distance:
-                                    closest_distance = distance
-                                    closest_match = (filename, feature, other_cluster_key)
+    # Remove duplicate clusters regardless of order inside the tuple
+    clusters = list(set([tuple(sorted(pair)) for pair in clusters]))
 
-                    # Identify matches within 5% of the closest match's distance
-                    matches_within_5_percent = []
-                    for other_cluster_key, other_cluster_features in temp_new_clusters.items():
-                        if other_cluster_key != new_cluster_key:
-                            for filename, feature in other_cluster_features:
-                                distance = calculate_distance(single_feature, feature)
-                                if distance / closest_distance <= 1.05 and (filename, feature) != closest_match[:2]:
-                                    matches_within_5_percent.append((filename, feature))
+    # Map clusters back to filenames
+    clustered_filenames = {k: (filenames[pair[0]], filenames[pair[1]]) for k, pair in enumerate(clusters)}
 
-                    # Create new clusters or pair using cut method
-                    if matches_within_5_percent:
-                        for filename, feature in matches_within_5_percent:
-                            new_5_percent_cluster_name = f"new_5_percent_re_cluster_{new_cluster_count}"
-                            new_cluster_count += 1
-                            clusters[new_5_percent_cluster_name] = [new_cluster_features[0], (filename, feature)]
-                        new_5_percent_cluster_name = f"new_5_percent__re_cluster_{new_cluster_count}"
-                        clusters[new_5_percent_cluster_name] = [new_cluster_features[0], closest_match[:2]]
-                        new_cluster_count += 1
-                    else:
-                        if closest_match:
-                            clusters[new_cluster_key] = [new_cluster_features[0], closest_match[:2]]
-                            temp_new_clusters[closest_match[2]].remove(closest_match[:2])
-                            new_cluster_key_cluster_modified = True
+    # Remove clusters that have close timestamps
+    clustered_filenames = filter_out_non_before_after_images(clustered_filenames, image_directory)
 
-                if not new_cluster_key_cluster_modified:
-                    clusters[new_cluster_key] = new_cluster_features
-
-            re_cluster_count += 1
-
-    single_feature_clusters = {k: v for k, v in clusters.items() if len(v) == 1}
-    new_cluster_count = 0  # For 5% logic clusters
-
-    for single_cluster_key, single_cluster_features in single_feature_clusters.items():
-        try:
-            single_feature = single_cluster_features[0][1]
-        except IndexError as e:
-            continue
-
-         # Store all distances and corresponding features
-        distances = []
-        for cluster_key, features in clusters.items():
-            if cluster_key != single_cluster_key:
-                for filename, feature in features:
-                    if filename != single_cluster_features[0][0]:
-                        distance = calculate_distance(single_feature, feature)
-                        # prevent duplicate additions to distances (only in considering the distance value)
-                        if (distance) not in [d[0] for d in distances]:
-                            distances.append((distance, (filename, feature, cluster_key)))
-
-        # Sort the distances
-        distances.sort(key=lambda x: x[0])
-
-        # Get the closest, second closest, and third closest matches
-        closest_match = distances[0][1] if len(distances) > 0 else (None, float('inf'))
-        second_closest_match = distances[1][1] if len(distances) > 1 else (None, float('inf'))
-        third_closest_match = distances[2][1] if len(distances) > 2 else (None, float('inf'))
-        fourth_closest_match = distances[3][1] if len(distances) > 3 else (None, float('inf'))
-
-        closest_distance = distances[0][0] if len(distances) > 0 else float('inf')
-
-        # Identify matches within 5% of the closest match's distance
-        matches_within_5_percent = []
-        if closest_match:
-            for cluster_key, features in clusters.items():
-                if cluster_key != single_cluster_key:
-                    for filename, feature in features:
-                        if filename != single_cluster_features[0][0]:
-                            distance = calculate_distance(single_feature, feature)
-                            if distance / closest_distance <= 1.07 and (filename, feature) != closest_match[:2] and (filename, feature) not in matches_within_5_percent:
-                                matches_within_5_percent.append((filename, feature))
-                                
-        # Create new clusters for matches within 5% or pair using cut method
-        if matches_within_5_percent:
-            for filename, feature in matches_within_5_percent:
-                new_5_percent_cluster_name = f"new_5_percent_cluster_{new_cluster_count}"
-                new_cluster_count += 1
-                clusters[new_5_percent_cluster_name] = [single_cluster_features[0], (filename, feature)]
-            new_5_percent_cluster_name = f"new_5_percent_cluster_{new_cluster_count}"
-            clusters[new_5_percent_cluster_name] = [single_cluster_features[0], closest_match[:2]]
-            new_cluster_count += 1
-        elif closest_match:
-            clusters[single_cluster_key] = [single_cluster_features[0], closest_match[:2]]
-
-            if len(distances) > 1 and distances[1][0] / closest_distance > 1.08:
-                new_cluster_name = f"new_additional_cluster_{new_cluster_count}"
-                new_cluster_count += 1
-                clusters[new_cluster_name] = [single_cluster_features[0], second_closest_match[:2]]
-                new_cluster_name = f"new_additional_cluster_{new_cluster_count}"
-                new_cluster_count += 1
-                clusters[new_cluster_name] = [single_cluster_features[0], third_closest_match[:2]]
-                new_cluster_name = f"new_additional_cluster_{new_cluster_count}"
-                new_cluster_count += 1
-                clusters[new_cluster_name] = [single_cluster_features[0], fourth_closest_match[:2]]
-            else:
-                clusters[closest_match[2]].remove(closest_match[:2])
-
-    clusters = {k: v for k, v in clusters.items() if len(v) > 1}
-    clusters = remove_duplicate_clusters(clusters)
-
-    clusters = {k: [filename for filename, _ in v] for k, v in clusters.items()}
-    clusters = filter_out_non_before_after_images(clusters, image_directory)
-    
-    return clusters
+    return clustered_filenames

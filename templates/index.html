@@ -3,33 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Image Merge App</title>
+    <title>Before&After Creator</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
-    <style>
-        .image-container {
-            margin: 10px;
-            display: inline-block;
-            text-align: center;
-        }
-        .image-container img {
-            width: 100%;
-            max-width: 300px; /* Adjust this value based on your preference */
-            height: auto;
-            margin-bottom: 5px;
-        }
-    </style>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    <link rel="icon" href="/path/to/favicon.ico" type="image/x-icon">
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
 </head>
 <body>
+    <div class="header">
+        <h1>Before&After Creator</h1>
+    </div>
     <div class="container">
-        <h1 class="mt-5">Upload Images for Merging</h1>
         <form id="upload-form" enctype="multipart/form-data">
             <div class="form-group">
                 <label for="imageUpload">Select images:</label>
-                <input type="file" class="form-control-file" id="imageUpload" name="images" multiple>
+                <input type="file" class="form-control-file" id="imageUpload" name="images" multiple aria-label="Upload Images">
             </div>
             <button type="submit" class="btn btn-primary">Upload</button>
         </form>
-        <!-- Add this inside the <body> tag, preferably after the <form> -->
+        <div id="progress-bars" class="mt-3"></div>
         <div id="loader" style="display: none;" class="text-center">
             <div class="spinner-border text-primary" role="status">
                 <span class="sr-only">Loading...</span>
