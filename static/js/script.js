@@ -53,7 +53,7 @@ $(document).ready(function () {
                         <p class="message-text">Smart Merge Complete!</p>
                     </div>
                 `);
-
+            
                 // Set a timeout to wait before displaying the images
                 setTimeout(function () {
                     $('#results').html(''); // Clear the "Smart Merge Complete!" message
@@ -62,8 +62,7 @@ $(document).ready(function () {
                         data.links.forEach(link => {
                             $('#results').append(`<div class="image-container">
                                                     <img src="${link}" alt="Processed Image" style="width:100%;max-width:300px;">
-                                                    <a href="${link}" download>Download</a>
-                                                  </div>`);
+                                                  </div>`); // Removed the download link
                         });
                     } else {
                         $('#results').html('<p>No images processed.</p>');
