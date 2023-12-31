@@ -4,6 +4,7 @@ from PIL import Image
 from PIL import ExifTags
 
 def apply_exif_orientation(image):
+    rotated = False
     try:
         for orientation in ExifTags.TAGS.keys():
             if ExifTags.TAGS[orientation]=='Orientation':
@@ -12,14 +13,17 @@ def apply_exif_orientation(image):
 
         if exif[orientation] == 3:
             image = image.rotate(180, expand=True)
+            rotated = True
         elif exif[orientation] == 6:
             image = image.rotate(270, expand=True)
+            rotated = True
         elif exif[orientation] == 8:
             image = image.rotate(90, expand=True)
+            rotated = True
     except (AttributeError, KeyError, IndexError):
         # cases: image don't have getexif
         pass
-    return image
+    return image, rotated
 
 def get_image_timestamp(image_path):
     try:
@@ -37,7 +41,7 @@ def merge_images_side_by_side(image_paths, output_path):
     images = []
     for path in image_paths:
         img = Image.open(path)
-        img = apply_exif_orientation(img)
+        img, _ = apply_exif_orientation(img)
         images.append(img)
     
     # Resize images to the same height, maintaining aspect ratio
@@ -71,7 +75,7 @@ def merge_images_with_custom_ratio_compromising_original_ar(image_paths, output_
     images = []
     for path in image_paths:
         img = Image.open(path)
-        img = apply_exif_orientation(img)
+        img, _ = apply_exif_orientation(img)
         images.append(img)
 
     # Calculate the size of each image's slot in the merged image
@@ -106,7 +110,7 @@ def merge_images_with_custom_ratio_maintaining_original_ar(image_paths, output_p
     images = []
     for path in image_paths:
         img = Image.open(path)
-        img = apply_exif_orientation(img)
+        img, _ = apply_exif_orientation(img)
         images.append(img)
 
     # Determine the size for each image to fit in the final 3:4 box ratio

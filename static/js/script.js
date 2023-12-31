@@ -6,16 +6,13 @@ $(document).ready(function () {
 
         var formData = new FormData(this);
 
-        // Create a progress bar for each file
-        for (var i = 0; i < this['images'].files.length; i++) {
-            var file = this['images'].files[i];
-            $('#progress-bars').append(`<div class="progress mb-2">
-                                            <div class="progress-bar" role="progressbar" id="progress-bar-${i}" 
-                                                 aria-valuemin="0" aria-valuemax="100" style="width: 0%"> 
-                                                ${file.name}
-                                            </div>
-                                        </div>`);
-        }
+        // Create a single progress bar
+        $('#progress-bars').append(`<div class="progress mb-2">
+                                        <div class="progress-bar" role="progressbar" id="total-progress-bar" 
+                                             aria-valuemin="0" aria-valuemax="100" style="width: 0%"> 
+                                            Uploading Photos...
+                                        </div>
+                                    </div>`);
 
         $.ajax({
             url: '/upload',
@@ -28,11 +25,10 @@ $(document).ready(function () {
                 xhr.upload.addEventListener("progress", function (evt) {
                     if (evt.lengthComputable) {
                         var percentComplete = Math.round((evt.loaded / evt.total) * 100);
-                        // Update progress bars
-                        for (var i = 0; i < $('#upload-form')[0]['images'].files.length; i++) {
-                            $(`#progress-bar-${i}`).css('width', percentComplete + '%').attr('aria-valuenow', percentComplete);
-                        }
-                        // Clear progress bars and show waiting message when upload is complete
+                        // Update the single progress bar
+                        $('#total-progress-bar').css('width', percentComplete + '%').attr('aria-valuenow', percentComplete);
+
+                        // Clear progress bar and show waiting message when upload is complete
                         if (percentComplete === 100) {
                             $('#progress-bars').html('');
                             $('#results').html(`
@@ -53,7 +49,7 @@ $(document).ready(function () {
                         <p class="message-text">Smart Merge Complete!</p>
                     </div>
                 `);
-            
+
                 // Set a timeout to wait before displaying the images
                 setTimeout(function () {
                     $('#results').html(''); // Clear the "Smart Merge Complete!" message

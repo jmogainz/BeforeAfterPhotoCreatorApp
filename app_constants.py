@@ -1,4 +1,3 @@
-# Configuration
 input_dir_var = "UPLOADS_FOLDER"
 output_dir_var = "PROCESSING_FOLDER"
 

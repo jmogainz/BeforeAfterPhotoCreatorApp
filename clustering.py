@@ -2,6 +2,7 @@ import os
 import numpy as np
 from tensorflow import keras
 from collections import defaultdict
+from PIL import Image
 
 # plotting
 # import matplotlib.pyplot as plt
@@ -16,7 +17,7 @@ Model = keras.models.Model
 # layer_name = 'conv5_block3_out'  # Example layer name, choose as per your need
 # model = Model(inputs=model.input, outputs=model.get_layer(layer_name).output)
 
-from image_merging import get_image_timestamp
+from image_merging import get_image_timestamp, apply_exif_orientation
 import datetime
 
 def filter_out_non_before_after_images(clusters, input_dir):
@@ -35,49 +36,41 @@ def filter_out_non_before_after_images(clusters, input_dir):
                 
     return filtered_clusters
 
-def load_images(image_directory):   
+def load_images(image_directory, fix_orientation=True):
     image_list = []
     filenames = []
+    rotated = False
+
     for filename in os.listdir(image_directory):
-        if filename.endswith(".jpg") or filename.endswith(".png") or filename.endswith(".JPEG") or filename.endswith(".jpeg"):
+        if filename.lower().endswith((".jpg", ".png", ".jpeg", ".JPEG")):
             img_path = os.path.join(image_directory, filename)
-            img = image.load_img(img_path, target_size=(512, 512))
-            img_array = image.img_to_array(img)
-            img_array = np.expand_dims(img_array, axis=0)
+            img = Image.open(img_path)
+            if fix_orientation:
+                img, rotated = apply_exif_orientation(img)
+            img = img.resize((512, 512))
+            
+            img_array = np.array(img)
+            if img_array.ndim == 2 or img_array.shape[2] == 1:
+                img_array = np.stack((img_array,) * 3, axis=-1)
+            
             img_array = preprocess_input(img_array)
+            img_array = np.expand_dims(img_array, axis=0)
             image_list.append(img_array)
             filenames.append(filename)
         else:
             print(f"Skipping {filename} as it is not a valid image file")
-    return np.vstack(image_list), filenames
+    
+    return np.vstack(image_list), filenames, rotated
 
 from sklearn.cluster import KMeans
 from collections import defaultdict
 import numpy as np
 
-def remove_duplicate_clusters(clusters):
-    unique_clusters = {}
-    seen_features = set()
-
-    for cluster_key, features in clusters.items():
-        # Sort the features for consistency in comparison
-        sorted_features = tuple(sorted([filename for filename, _ in features]))
-        
-        if sorted_features not in seen_features:
-            seen_features.add(sorted_features)
-            unique_clusters[cluster_key] = features
-
-    return unique_clusters
-
-def cluster_images(image_directory):
-    # Load images
-    images, filenames = load_images(image_directory)
-    
-    # Load the pre-trained model
-    model = ResNet152(weights='imagenet', include_top=False, pooling='avg', input_shape=(512, 512, 3))
-    
-    # Extract features
+def calculate_pairs(model, images, filenames):
     feature_vectors = model.predict(images)
+
+    if len(feature_vectors) == 2:
+        return {0: (filenames[0], filenames[1])}
     
     # plot the feature vectors
     # plot_feature_vectors(feature_vectors, labels=filenames)
@@ -114,19 +107,38 @@ def cluster_images(image_directory):
         closest = dist_list[0][1]
         clusters.append((i, closest))
 
-        if dist_list[1][0] / dist_list[0][0] <= .5 * (average_closest_to_2nd_closest_factor - 1) + 1:
-            clusters.append((i, dist_list[1][1]))
-        elif dist_list[1][0] / dist_list[0][0] <= average_closest_to_2nd_closest_factor:
-            for dist, j in dist_list[1:4]:
-                clusters.append((i, j))
+        # add logging to log the top 3 distances for each image
+        print(f"Closest 5 distances for {filenames[i]}: {dist_list[0][0]}: {filenames[dist_list[0][1]]}, {dist_list[1][0]}: {filenames[dist_list[1][1]]}, {dist_list[2][0]}: {filenames[dist_list[2][1]]}, {dist_list[3][0]}: {filenames[dist_list[3][1]]}, {dist_list[4][0]}: {filenames[dist_list[4][1]]}")
+        print(f"Factor between the first and second closest matches: {dist_list[1][0] / dist_list[0][0]}")
+        print(f"Average factor between the first and second closest matches: {average_closest_to_2nd_closest_factor}")
+
+        try:
+            number_of_contingency_clusters = len(dist_list) // 3
+            if number_of_contingency_clusters < 2:
+                number_of_contingency_clusters = 2 # minimum of 2 contingency clusters
+            if dist_list[1][0] / dist_list[0][0] <= average_closest_to_2nd_closest_factor:
+                for dist, j in dist_list[1:number_of_contingency_clusters]:
+                    clusters.append((i, j))
+        except IndexError:
+            pass
 
     # Remove duplicate clusters regardless of order inside the tuple
     clusters = list(set([tuple(sorted(pair)) for pair in clusters]))
 
-    # Map clusters back to filenames
+    return clusters
+
+def cluster_images(image_directory):
+
+    model = ResNet152(weights='imagenet', include_top=False, pooling='avg', input_shape=(512, 512, 3))
+
+    # Load images
+    images, filenames, rotated = load_images(image_directory, True)
+    print(f"Rotated: {rotated}")
+    clusters = calculate_pairs(model, images, filenames)
+
+    # filter out clusters with timestamps that are too close together
     clustered_filenames = {k: (filenames[pair[0]], filenames[pair[1]]) for k, pair in enumerate(clusters)}
 
-    # Remove clusters that have close timestamps
     clustered_filenames = filter_out_non_before_after_images(clustered_filenames, image_directory)
 
     return clustered_filenames
