@@ -108,9 +108,9 @@ def calculate_pairs(model, images, filenames):
         clusters.append((i, closest))
 
         # add logging to log the top 3 distances for each image
-        print(f"Closest 5 distances for {filenames[i]}: {dist_list[0][0]}: {filenames[dist_list[0][1]]}, {dist_list[1][0]}: {filenames[dist_list[1][1]]}, {dist_list[2][0]}: {filenames[dist_list[2][1]]}, {dist_list[3][0]}: {filenames[dist_list[3][1]]}, {dist_list[4][0]}: {filenames[dist_list[4][1]]}")
-        print(f"Factor between the first and second closest matches: {dist_list[1][0] / dist_list[0][0]}")
-        print(f"Average factor between the first and second closest matches: {average_closest_to_2nd_closest_factor}")
+        # print(f"Closest 5 distances for {filenames[i]}: {dist_list[0][0]}: {filenames[dist_list[0][1]]}, {dist_list[1][0]}: {filenames[dist_list[1][1]]}, {dist_list[2][0]}: {filenames[dist_list[2][1]]}, {dist_list[3][0]}: {filenames[dist_list[3][1]]}, {dist_list[4][0]}: {filenames[dist_list[4][1]]}")
+        # print(f"Factor between the first and second closest matches: {dist_list[1][0] / dist_list[0][0]}")
+        # print(f"Average factor between the first and second closest matches: {average_closest_to_2nd_closest_factor}")
 
         try:
             number_of_contingency_clusters = len(dist_list) // 3
@@ -133,7 +133,9 @@ def cluster_images(image_directory):
 
     # Load images
     images, filenames, rotated = load_images(image_directory, True)
+
     print(f"Rotated: {rotated}")
+
     clusters = calculate_pairs(model, images, filenames)
 
     # filter out clusters with timestamps that are too close together

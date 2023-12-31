@@ -5,6 +5,7 @@ $(document).ready(function () {
         $('#progress-bars').html(''); // Clear existing progress bars
 
         var formData = new FormData(this);
+        var fileCount = this['images'].files.length; // Get the count of files
 
         // Create a single progress bar
         $('#progress-bars').append(`<div class="progress mb-2">
@@ -28,13 +29,16 @@ $(document).ready(function () {
                         // Update the single progress bar
                         $('#total-progress-bar').css('width', percentComplete + '%').attr('aria-valuenow', percentComplete);
 
-                        // Clear progress bar and show waiting message when upload is complete
+                        // Change message based on file count when upload is complete
                         if (percentComplete === 100) {
                             $('#progress-bars').html('');
+                            var message = fileCount > 15 ? 
+                                "Attempting Smart Merge... <br>Lots of files were uploaded... <br>May be a dumb merge..." :
+                                "Performing Smart Merge...";
                             $('#results').html(`
                                 <div class="waiting-message">
                                     <div class="spinner-border text-primary" role="status"></div>
-                                    <p class="message-text">Initiating Smart Merge...</p>
+                                    <p class="message-text">${message}</p>
                                 </div>
                             `);
                         }
@@ -58,7 +62,7 @@ $(document).ready(function () {
                         data.links.forEach(link => {
                             $('#results').append(`<div class="image-container">
                                                     <img src="${link}" alt="Processed Image" style="width:100%;max-width:300px;">
-                                                  </div>`); // Removed the download link
+                                                  </div>`); 
                         });
                     } else {
                         $('#results').html('<p>No images processed.</p>');
