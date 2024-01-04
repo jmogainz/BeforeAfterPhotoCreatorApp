@@ -70,7 +70,7 @@ def calculate_pairs(model, images, filenames):
     feature_vectors = model.predict(images)
 
     if len(feature_vectors) == 2:
-        return {0: (filenames[0], filenames[1])}
+        return [(0, 1)]
     
     # plot the feature vectors
     # plot_feature_vectors(feature_vectors, labels=filenames)
@@ -107,8 +107,12 @@ def calculate_pairs(model, images, filenames):
         closest = dist_list[0][1]
         clusters.append((i, closest))
 
-        # add logging to log the top 3 distances for each image
-        print(f"Closest 5 distances for {filenames[i]}: {dist_list[0][0]}: {filenames[dist_list[0][1]]}, {dist_list[1][0]}: {filenames[dist_list[1][1]]}, {dist_list[2][0]}: {filenames[dist_list[2][1]]}, {dist_list[3][0]}: {filenames[dist_list[3][1]]}, {dist_list[4][0]}: {filenames[dist_list[4][1]]}")
+        # do the same logging statement above but do it in a for loop with a try except block to handle the case where there are less than 5 images in the cluster
+        for j in range(5):
+            try:
+                print(f"Closest {j+1} distances for {filenames[i]}: {dist_list[j][0]}: {filenames[dist_list[j][1]]}")
+            except IndexError:
+                pass
         print(f"Factor between the first and second closest matches: {dist_list[1][0] / dist_list[0][0]}")
         print(f"Average factor between the first and second closest matches: {average_closest_to_2nd_closest_factor}")
 
