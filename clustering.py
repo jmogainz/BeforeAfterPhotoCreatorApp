@@ -14,6 +14,15 @@ preprocess_input = keras.applications.resnet50.preprocess_input
 image = keras.preprocessing.image
 Model = keras.models.Model
 
+class TimestampError(Exception):
+    """Exception raised when timestamps are missing in image metadata."""
+    pass
+
+log_level = "DEBUG"
+def log(statement):
+    if log_level == "DEBUG":
+        print("[INFO] " + statement)
+
 # layer_name = 'conv5_block3_out'  # Example layer name, choose as per your need
 # model = Model(inputs=model.input, outputs=model.get_layer(layer_name).output)
 
@@ -33,6 +42,10 @@ def filter_out_non_before_after_images(clusters, input_dir):
             timestamps.sort()
             if timestamps[1] - timestamps[0] > datetime.timedelta(minutes=5):
                 filtered_clusters[cluster] = filenames
+            else:
+                log(f"Filtered cluster {cluster} with timestamps: {timestamps}")
+        else:
+            raise TimestampError(f"Timestamps are missing in some or all image metadata.")
                 
     return filtered_clusters
 
@@ -108,13 +121,14 @@ def calculate_pairs(model, images, filenames):
         clusters.append((i, closest))
 
         # do the same logging statement above but do it in a for loop with a try except block to handle the case where there are less than 5 images in the cluster
-        for j in range(5):
-            try:
-                print(f"Closest {j+1} distances for {filenames[i]}: {dist_list[j][0]}: {filenames[dist_list[j][1]]}")
-            except IndexError:
-                pass
-        print(f"Factor between the first and second closest matches: {dist_list[1][0] / dist_list[0][0]}")
-        print(f"Average factor between the first and second closest matches: {average_closest_to_2nd_closest_factor}")
+        if log_level == "DEBUG":
+            for j in range(5):
+                try:
+                    log(f"Closest {j+1} distances for {filenames[i]}: {dist_list[j][0]}: {filenames[dist_list[j][1]]}")
+                except IndexError:
+                    pass
+            log(f"Factor between the first and second closest matches: {dist_list[1][0] / dist_list[0][0]}")
+            log(f"Average factor between the first and second closest matches: {average_closest_to_2nd_closest_factor}")
 
         try:
             number_of_contingency_clusters = round(-8 * average_closest_to_2nd_closest_factor + 15.8) # trialed and error to get this formula
@@ -136,13 +150,19 @@ def cluster_images(image_directory):
     # Load images
     images, filenames, rotated = load_images(image_directory, True)
 
-    print(f"Rotated: {rotated}")
+    log(f"Rotated: {rotated}")
 
     clusters = calculate_pairs(model, images, filenames)
 
     # filter out clusters with timestamps that are too close together
     clustered_filenames = {k: (filenames[pair[0]], filenames[pair[1]]) for k, pair in enumerate(clusters)}
 
+    log(f"Number of clusters before timestamp filter: {len(clustered_filenames)}")
     clustered_filenames = filter_out_non_before_after_images(clustered_filenames, image_directory)
+    log(f"Number of clusters after timestamp filter: {len(clustered_filenames)}")
+
+    # print out clusters
+    for cluster, filenames in clustered_filenames.items():
+        log(f"Cluster {cluster}: {filenames}")
 
     return clustered_filenames

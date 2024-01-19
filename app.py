@@ -3,7 +3,7 @@ from werkzeug.utils import secure_filename
 import os
 from app_constants import *
 from image_merging import merge_images
-from clustering import cluster_images
+from clustering import cluster_images, TimestampError
 from app_helpers import clear_folder
 
 app = Flask(__name__)
@@ -39,8 +39,11 @@ def upload_file():
             filename = secure_filename(file.filename)
             file.save(os.path.join(app.config[input_dir_var], filename))
 
-    clusters = cluster_images(app.config[input_dir_var])
-    merge_images(clusters, app.config[input_dir_var], app.config[output_dir_var])
+    try:
+        clusters = cluster_images(app.config[input_dir_var])
+        merge_images(clusters, app.config[input_dir_var], app.config[output_dir_var])
+    except TimestampError as e:  # Assuming TimestampError is the exception you're using
+        return jsonify({'error': 'timestamp_missing', 'message': str(e)})
 
     processed_files = os.listdir(app.config[output_dir_var])
     processed_files_urls = [f'/download/{filename}' for filename in processed_files]

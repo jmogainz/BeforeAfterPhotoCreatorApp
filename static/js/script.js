@@ -47,6 +47,12 @@ $(document).ready(function () {
                 return xhr;
             },
             success: function (data) {
+                $('#results').html(''); // Clear previous messages
+
+                if (data.error && data.error === 'timestamp_missing') {
+                    $('#results').append(`<p>Error: ${data.message}</p>`);
+                    return;
+                }
                 // Display the "Smart Merge Complete!" message
                 $('#results').html(`
                     <div class="waiting-message">
