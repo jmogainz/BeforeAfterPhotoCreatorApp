@@ -1,3 +1,4 @@
 uploads/
 processed/
 __pycache__/
+*.pptx

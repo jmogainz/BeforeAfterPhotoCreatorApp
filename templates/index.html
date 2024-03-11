@@ -1,34 +1,42 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Before&After Creator</title>
+    <title>Before & After Creator</title>
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
     <link rel="stylesheet" href="/static/css/styles.css">
     <link rel="icon" type="image/x-icon" href="/static/images/favicon.ico">
     <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
 </head>
+
 <body>
     <div class="header">
-        <h1>Before&After Creator</h1>
+        <img src="/static/images/b&a.jpg" alt="Before and After Logo" id="header-logo">
+        <h1>Before & After Creator</h1>
     </div>
     <div class="container">
         <!-- Info Box with Recommendations -->
         <div class="alert alert-info mt-4" role="alert">
             <h4 class="alert-heading">Recommendations for Best Merging Performance (not required):</h4>
             <ul>
-                <li>Each 'before' image should be taken a minimum of 5 minutes prior to its counterpart 'after' image.</li>
+                <li>Each 'before' image should be taken a minimum of 5 minutes prior to its counterpart 'after' image.
+                </li>
                 <li>'Before' images are all taken within 5 minutes of each other.</li>
                 <li>'After' images are all taken within 5 minutes of each other.</li>
-                <li>The field of view of the 'before' image matches its respective 'after' image. Simply ensure there are no features in the 'after' image that are not in the 'before' image and vice versa (e.g., the 'before' image of a steering wheel should not only show the steering wheel while the 'after' image has additional elements like the radio or sun visor).</li>
+                <li>The field of view of the 'before' image matches its respective 'after' image. Simply ensure there
+                    are no features in the 'after' image that are not in the 'before' image and vice versa (e.g., the
+                    'before' image of a steering wheel should not only show the steering wheel while the 'after' image
+                    has additional elements like the radio or sun visor).</li>
             </ul>
         </div>
 
         <form id="upload-form" enctype="multipart/form-data">
             <div class="form-group">
                 <label for="imageUpload">Select images:</label>
-                <input type="file" class="form-control-file" id="imageUpload" name="images" multiple aria-label="Upload Images">
+                <input type="file" class="form-control-file" id="imageUpload" name="images" multiple
+                    aria-label="Upload Images">
             </div>
             <button type="submit" class="btn btn-primary">Upload</button>
         </form>
@@ -43,4 +51,5 @@
     <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
     <script src="/static/js/script.js"></script>
 </body>
+
 </html>

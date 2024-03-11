@@ -38,14 +38,14 @@ def filter_out_non_before_after_images(clusters, input_dir):
             timestamp = get_image_timestamp(os.path.join(input_dir, filename))
             if timestamp:
                 timestamps.append(timestamp)
+            else:
+                raise TimestampError(f"Timestamps are missing in some or all image metadata.")
         if timestamps:
             timestamps.sort()
             if timestamps[1] - timestamps[0] > datetime.timedelta(minutes=5):
                 filtered_clusters[cluster] = filenames
             else:
                 log(f"Filtered cluster {cluster} with timestamps: {timestamps}")
-        else:
-            raise TimestampError(f"Timestamps are missing in some or all image metadata.")
                 
     return filtered_clusters
 

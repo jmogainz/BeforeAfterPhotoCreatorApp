@@ -58,4 +58,4 @@ def download_file(filename):
 
 # Running the Flask app
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=80, debug=True)  # Listen on all interfaces
+    app.run(host='0.0.0.0', port=80, debug=False)  # Listen on all interfaces
